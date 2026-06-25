@@ -170,13 +170,13 @@ export async function POST(req: Request) {
 
     if (hcxApiGwKey) {
       // 1. API Gateway mode (Service App)
-      endpoint = 'https://clovastudio.apigw.ntruss.com/testapp/v1/chat-completions/HCX-DASH-002';
+      endpoint = 'https://clovastudio.apigw.ntruss.com/testapp/v1/chat-completions/HCX-003';
       headers['X-NCP-CLOVASTUDIO-API-KEY'] = hcxApiKey;
       headers['X-NCP-APIGW-API-KEY'] = hcxApiGwKey;
       requestBody.repeatPenalty = 5.0;
     } else {
       // 2. Playground direct API mode (v3 stream/completions)
-      endpoint = 'https://clovastudio.stream.ntruss.com/v3/chat-completions/HCX-DASH-002';
+      endpoint = 'https://clovastudio.stream.ntruss.com/v3/chat-completions/HCX-003';
       headers['Authorization'] = `Bearer ${hcxApiKey}`;
       requestBody.repetitionPenalty = 1.1;
     }
