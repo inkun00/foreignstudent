@@ -158,7 +158,7 @@ export function generateSystemPrompt(
 ): string {
   const strugglesText = persona.struggles.map((s, idx) => `${idx + 1}. ${s}`).join('\n');
   const enviesText = persona.envies.map((e, idx) => `${idx + 1}. ${e}`).join('\n');
-  const mistakesText = persona.typicalMistakes.map((m, idx) => `- ${m}`).join('\n');
+  const mistakesText = persona.typicalMistakes.map((m) => `- ${m}`).join('\n');
 
   const vulnerabilityDirective = turnCount >= 5
     ? `\n\n[★현재 상황 - 경계 해제 단계★]
