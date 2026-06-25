@@ -132,7 +132,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid country specified' }, { status: 400 });
     }
 
-    const turnCount = messages.filter((m: any) => m.role === 'user').length;
+    const turnCount = messages.filter((m: { role: string; content: string }) => m.role === 'user').length;
     const hcxApiKey = process.env.HCX_API_KEY;
     const hcxApiGwKey = process.env.HCX_APIGW_KEY;
 
@@ -154,10 +154,20 @@ export async function POST(req: Request) {
       'Content-Type': 'application/json',
     };
 
-    const requestBody: any = {
+    interface RequestBodyType {
+      messages: { role: string; content: string }[];
+      topP: number;
+      topK: number;
+      maxTokens: number;
+      temperature: number;
+      repeatPenalty?: number;
+      repetitionPenalty?: number;
+    }
+
+    const requestBody: RequestBodyType = {
       messages: [
         { role: 'system', content: systemPrompt },
-        ...messages.map((m: any) => ({
+        ...messages.map((m: { role: string; content: string }) => ({
           role: m.role === 'assistant' ? 'assistant' : 'user',
           content: m.content,
         })),
@@ -209,8 +219,9 @@ export async function POST(req: Request) {
       isMock: false,
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('[DaomTalk] API route crash:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

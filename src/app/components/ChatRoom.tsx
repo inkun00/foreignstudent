@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import styles from './ChatRoom.module.css';
 import { Persona } from '../utils/personas';
 
@@ -130,7 +131,14 @@ function getGuideSuggestions(country: string): { label: string; question: string
 }
 
 export default function ChatRoom({ userName, userGrade, userGender, country, personaName, persona, profileImageIdx, onBack }: ChatRoomProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => [
+    {
+      id: 'initial',
+      role: 'assistant',
+      content: getInitialGreeting(country, personaName, userName, userGrade),
+      time: getKoreanTime(),
+    },
+  ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(true);
@@ -139,19 +147,6 @@ export default function ChatRoom({ userName, userGrade, userGender, country, per
 
   const genderPrefix = userGender === '남학생' ? 'male' : 'female';
   const profileImgPath = `/profiles/${getCountryDir(country)}/${genderPrefix}_${profileImageIdx}.png`;
-
-  // Initialize with greeting
-  useEffect(() => {
-    const greeting = getInitialGreeting(country, personaName, userName, userGrade);
-    setMessages([
-      {
-        id: 'initial',
-        role: 'assistant',
-        content: greeting,
-        time: getKoreanTime(),
-      },
-    ]);
-  }, [country, personaName, userName, userGrade]);
 
 
   // Scroll to bottom on new message
@@ -237,6 +232,73 @@ export default function ChatRoom({ userName, userGrade, userGender, country, per
     }
   };
 
+  const handleCapture = async () => {
+    if (!chatAreaRef.current) return;
+
+    const chatArea = chatAreaRef.current;
+    
+    // Save original styles
+    const originalHeight = chatArea.style.height;
+    const originalMaxHeight = chatArea.style.maxHeight;
+    const originalOverflowY = chatArea.style.overflowY;
+
+    try {
+      // Temporarily expand the element to its full content height
+      chatArea.style.height = 'auto';
+      chatArea.style.maxHeight = 'none';
+      chatArea.style.overflowY = 'visible';
+
+      const canvas = await html2canvas(chatArea, {
+        useCORS: true,
+        backgroundColor: '#BACEE0',
+        logging: false,
+        scale: 2,
+      });
+
+      // Restore original styles
+      chatArea.style.height = originalHeight;
+      chatArea.style.maxHeight = originalMaxHeight;
+      chatArea.style.overflowY = originalOverflowY;
+
+      // Downloader trigger
+      const imgData = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = imgData;
+      link.download = `daomtalk_chat_${personaName}_${new Date().toISOString().slice(0, 10)}.png`;
+      link.click();
+    } catch (error) {
+      console.error('Capture failed:', error);
+      chatArea.style.height = originalHeight;
+      chatArea.style.maxHeight = originalMaxHeight;
+      chatArea.style.overflowY = originalOverflowY;
+    }
+  };
+
+  const handleDownloadTxt = () => {
+    let text = `==================================================\n`;
+    text += `  다옴톡 (DaomTalk) 대화 대본 기록\n`;
+    text += `==================================================\n`;
+    text += `대화 일시: ${new Date().toLocaleString('ko-KR')}\n`;
+    text += `대화 상대: ${personaName} (${country} 배경, ${userGrade} ${userGender})\n`;
+    text += `사용자: ${userName} (${userGrade} ${userGender})\n`;
+    text += `--------------------------------------------------\n\n`;
+
+    messages.forEach((msg) => {
+      const sender = msg.role === 'user' ? userName : personaName;
+      text += `[${sender}] (${msg.time}):\n${msg.content}\n\n`;
+    });
+
+    text += `==================================================\n`;
+
+    // Download trigger
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `daomtalk_transcript_${personaName}_${new Date().toISOString().slice(0, 10)}.txt`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
   const handleSuggestionClick = (question: string) => {
     setInputValue(question);
   };
@@ -275,6 +337,22 @@ export default function ChatRoom({ userName, userGrade, userGender, country, per
           </div>
         </div>
         <div className={styles.headerRight}>
+          <button 
+            className={styles.iconBtn} 
+            onClick={handleCapture} 
+            title="대화방 이미지 저장 (📸)" 
+            aria-label="대화방 이미지 저장"
+          >
+            📸
+          </button>
+          <button 
+            className={styles.iconBtn} 
+            onClick={handleDownloadTxt} 
+            title="대본 텍스트 다운로드 (📄)" 
+            aria-label="대본 텍스트 다운로드"
+          >
+            📄
+          </button>
           <button className={styles.iconBtn} aria-label="검색">🔍</button>
           <button className={styles.iconBtn} aria-label="메뉴">☰</button>
         </div>
